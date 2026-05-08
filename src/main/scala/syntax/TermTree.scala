@@ -46,9 +46,4 @@ object TermTree:
       condition: Syntax[TermTree], success: Syntax[TermTree], failure: Syntax[TermTree]
   ) extends TermTree
 
-  /** A definition (i.e., the introduction of a named function). */
-  case class Definition(
-      name: Syntax[TermTree.Variable], abstraction: Syntax[TermTree], tail: Syntax[TermTree]
-  ) extends TermTree
-
 end TermTree
