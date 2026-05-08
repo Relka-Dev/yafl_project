@@ -55,10 +55,11 @@ object Token:
   val dot               : Tag = 0x0e
   val comma             : Tag = 0x0f
   val colon             : Tag = 0x10
-  val leftBracket       : Tag = 0x11
-  val rightBracket      : Tag = 0x12
-  val leftParenthesis   : Tag = 0x13
-  val rightParenthesis  : Tag = 0x14
+  val semicolon         : Tag = 0x11
+  val leftBracket       : Tag = 0x12
+  val rightBracket      : Tag = 0x13
+  val leftParenthesis   : Tag = 0x14
+  val rightParenthesis  : Tag = 0x15
 
   /** Returns a closure that accepts a token and returns `true` iff that token has tag `k`. */
   def hasTag(k: Tag): Token => Boolean =

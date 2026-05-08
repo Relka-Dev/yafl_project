@@ -59,7 +59,7 @@ final class LexerTests extends munit.FunSuite:
     assert(found.sameElements(expected))
 
   test("punctuation"):
-    val input = SourceFile("test", "[]().,:")
+    val input = SourceFile("test", "[]().,;:")
     val found = tokens(input).map((t) => t.tag)
     val expected = IArray(
       Token.leftBracket,
@@ -68,6 +68,7 @@ final class LexerTests extends munit.FunSuite:
       Token.rightParenthesis,
       Token.dot,
       Token.comma,
+      Token.semicolon,
       Token.colon)
     assert(found.sameElements(expected))
 

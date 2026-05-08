@@ -137,6 +137,7 @@ extension (source: SourceFile)
       case ')' => Token.rightParenthesis
       case '.' => Token.dot
       case ',' => Token.comma
+      case ';' => Token.semicolon
       case ':' => Token.colon
       case  _ => Token.error
     Token(tag, SourceSpan(start, start + 1, source))
