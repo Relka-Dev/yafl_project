@@ -78,7 +78,6 @@ object Parser:
       case Some(Token.boolean) => booleanLiteral
       case Some(Token.integer) => integerLiteral
       case Some(Token.identifier) => termIdentifier
-      case Some(Token.operator) => operator
       case Some(Token.leftParenthesis) => lambdaOrParenthesized
       case _ => throw expected("term")
 
@@ -108,7 +107,7 @@ object Parser:
       // If the next token is a closing parenthesis, we parse a unit literal. Otherwise, we may be
       // parsing either a lambda or simply a parenthesized term, depending on the presence of a
       // thick arrow after the closing parenthesis.
-      takeIf(Token.hasTag(Token.leftParenthesis)) match
+      takeIf(Token.hasTag(Token.rightParenthesis)) match
         case Some(s) =>
           // We've pased a closing parenthesis right after the opening one.
           s.map((end) => Syntax(TermTree.UnitLiteral, start.span.extendedToCover(end.span)))
