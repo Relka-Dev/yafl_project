@@ -18,7 +18,4 @@ object TypeTree:
       parameter: Syntax[TypeTree.Variable], body: Syntax[TypeTree]
   ) extends TypeTree
 
-  /** An elided type, left to be inferred. */
-  case object ElidedType extends TypeTree
-
 end TypeTree
