@@ -78,9 +78,9 @@ given scala.util.CommandLineParser.FromString[Arguments] with
 end given
 
 /** The entry point of the application.
- *
- *  @param filepath The path to the input file.
- */
+  *
+  * @param filepath The path to the input file.
+  */
 @main def Main(argv: String*): Unit = {
   try
     // Parse the command line arguments.

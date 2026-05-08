@@ -7,10 +7,10 @@ import yafl.typer.Type
 object Typer:
 
   /** A typing environment, keeping track of term and type variables having been introduced.
-   *
-   *  @param terms A mapping from term variable to its type.
-   *  @param types A list of type variables having been introduced, in reverse order.
-   */
+    *
+    * @param terms A mapping from term variable to its type.
+    * @param types A list of type variables having been introduced, in reverse order.
+    */
   final class Environment private (terms: Map[String, Type], types: List[TypeTree.Variable]):
 
     /** Returns a copy of `this` in which `n` is assigned to `t`. */
