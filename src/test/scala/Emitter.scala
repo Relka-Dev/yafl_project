@@ -5,6 +5,7 @@ import java.io.File
 
 import yafl.SourceFile
 import yafl.emitter.Emitter
+import yafl.optimizer.Optimizer
 import yafl.parser.Parser
 import yafl.typer.Typer
 
@@ -31,7 +32,7 @@ final class EmitterTests extends munit.FunSuite:
 
   /** Compiles `input` to a WebAssembly module and returns an instance of it. */
   private def compile(input: SourceFile): chicory.runtime.Instance =
-    val program = Typer.check(Parser.parse(input))
+    val program =  Optimizer.optimize(Typer.check(Parser.parse(input)))
     val binary = Wat2Wasm.parse(Emitter.emit(program))
     val m = chicory.wasm.Parser.parse(binary)
     chicory.runtime.Instance.builder(m).build()
