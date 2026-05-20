@@ -144,6 +144,15 @@ object Parser:
         }
       }
     }
+  
+  private def parenthesizedTerm(using Context): Result[Syntax[TermTree]] =
+    take(Token.leftParenthesis, "'('").and { (opener) =>
+      term.and { (t) =>
+        take(Token.rightParenthesis, "')'").map { (_) =>
+          Syntax(t.value, opener.span.extendedToCover(t.span))
+        }
+      }
+    }
 
   /** Parses an infix operator. */
   private def infixOperator(using Context): Result[Syntax[TermTree.Variable]] =
