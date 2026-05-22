@@ -98,6 +98,7 @@ object Parser:
       case Some(Token.`if`) => conditional
       case Some(Token.`let`) => binding
       case Some(Token.leftBracket) => typeAbstraction
+      case Some(Token.operator) => prefixOperator
       case _ => throw expected("term")
 
   /** Parses a Boolean literal. */
@@ -130,6 +131,7 @@ object Parser:
         }
       }
     }
+
   /** Parses a binding. */
   private def binding(using Context): Result[Syntax[TermTree.Binding]] =
     take(Token.`let`, "'let'").and { (opener) =>
@@ -178,10 +180,32 @@ object Parser:
       }
     }
 
+  /** Parse an universal Type (aka ForAll) */
+  private def forAll(using Context): Result[Syntax[TypeTree.ForAll]] =
+    take(Token.leftBracket, "'['").and { (opener) =>
+      typeIdentifier.and { (parameter) =>
+        take(Token.rightBracket, "']'").and { (_) =>
+          take(Token.thickArrow, "'=>'").and { (_) =>
+            typ3.map { (body) =>                
+              Syntax(
+                TypeTree.ForAll(parameter, body),
+                opener.span.extendedToCover(body.span)
+              )
+            }
+          }
+        }
+      }     
+    }
+
   /** Parses an infix operator. */
   private def infixOperator(using Context): Result[Syntax[TermTree.Variable]] =
     take(Token.operator, "operator")
       .map((n) => Syntax(TermTree.Variable(s"infix${n.text}"), n.span))
+
+  /** Parses a prefix operator. */
+  private def prefixOperator(using Context): Result[Syntax[TermTree.Variable]] =
+    take(Token.operator, "operator")
+      .map((n) => Syntax(TermTree.Variable(s"prefix${n.text}"), n.span))
 
   /** Parses a lambda or a parenthesized term. */
   private def lambdaOrParenthesized(using Context): Result[Syntax[TermTree]] =
@@ -243,6 +267,7 @@ object Parser:
   private def simpleType(using Context): Result[Syntax[TypeTree]] =
     peek.map((t) => t.tag) match
       case Some(Token.identifier) => typeIdentifier
+      case Some(Token.leftBracket) => forAll
       case _ => throw expected("type")
 
   /** Parses a type identifier. */
