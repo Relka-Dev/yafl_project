@@ -97,6 +97,7 @@ object Parser:
       case Some(Token.leftParenthesis) => lambdaOrParenthesized
       case Some(Token.`if`) => conditional
       case Some(Token.`let`) => binding
+      case Some(Token.leftBracket) => typeAbstraction
       case _ => throw expected("term")
 
   /** Parses a Boolean literal. */
@@ -150,6 +151,29 @@ object Parser:
       term.and { (t) =>
         take(Token.rightParenthesis, "')'").map { (_) =>
           Syntax(t.value, opener.span.extendedToCover(t.span))
+        }
+      }
+    }
+
+  /** Parses a type abstraction
+    * 
+    * Format : [T] => body
+    * 
+    * Requirements
+    *   - Next token : "["
+    */
+  private def typeAbstraction(using Context): Result[Syntax[TermTree.TypeAbstraction]] =
+    take(Token.leftBracket, "'['").and { (opener) =>
+      typeIdentifier.and { (parameter) =>
+        take(Token.rightBracket, "']'").and { (_) =>
+          take(Token.thickArrow, "'=>'").and { (_) =>
+            term.map { (body) =>
+              Syntax(
+                TermTree.TypeAbstraction(parameter, body),
+                opener.span.extendedToCover(body.span)
+              )
+            }
+          }
         }
       }
     }
