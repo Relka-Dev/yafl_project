@@ -99,14 +99,14 @@ All tasks have an associated test that you can use to exercise your implementati
 > Since other methods are private, there is no direct means to test the parsing of a type expression.
 > One simple way to work around this issue is to parse a term involving a type expression, such as a type application or a type abstraction.
 
-- [ ] **Conditionals and Bindings** (required)
+- [X] **Conditionals and Bindings** (required)
 
   Conditionals and bindings are simple terms that are relatively easy to parse.
   Each construction is introduced with its own dedicated keyword (i.e., `if` and `let`, respectively) and has a fixed structure.
   Consequently, it is straightforward for the parser to recognize the start of a construction.
   You can take inspiration from the part of the parser that is handling the expression of a lambda to write your code.
 
-- [ ] **Type abstractions** (required)
+- [X] **Type abstractions** (required)
 
   Type abstractions have the form `[T] => e`.
   Similarly to conditionals and bindings, they also start with a token (i.e., `[`) that cannot occur at the beginning of any other construction.
@@ -135,7 +135,7 @@ All tasks have an associated test that you can use to exercise your implementati
   However, notice that the occurrence of an arrow operator (i.e., `->`) following a type expression signals the presence of an arrow.
   Further, since the operator is right-associative, the parser can simply recurse to recognize the type expression on the right-hand side.
 
-- [ ] **Parenthesized types** (required)
+- [X] **Parenthesized types** (required)
 
   Just like term expressions, type expressions can be written in parentheses to override default precedence or simply to improve legibility.
   For example, the type expression `T -> U -> V` does not denote the same type as `(T -> U) -> V`.
