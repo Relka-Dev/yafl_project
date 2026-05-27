@@ -196,7 +196,7 @@ object Parser:
       }
     }
 
-  /** Parse an universal Type (aka ForAll) */
+  /** Parse an universal Type (aka ForAll). */
   private def forAll(using Context): Result[Syntax[TypeTree.ForAll]] =
     take(Token.leftBracket, "'['").and { (opener) =>
       typeIdentifier.and { (parameter) =>
@@ -277,7 +277,16 @@ object Parser:
 
   /** Parses a type. */
   private def typ3(using Context): Result[Syntax[TypeTree]] =
-    simpleType
+    simpleType.and { (lhs) =>
+      // If there is a `thinArrow`, parse as an arrowType
+      // else, keep the simpleType
+      takeIf(Token.hasTag(Token.thinArrow)) match
+        case Some(s) => s.and { (arrow) => {
+            typ3.map { (rhs) => Syntax(TypeTree.Arrow(lhs, rhs), lhs.span.extendedToCover(rhs.span)) }
+          }
+        }
+        case _ => result(lhs)
+    }
 
   /** Parses a simple type. */
   private def simpleType(using Context): Result[Syntax[TypeTree]] =
