@@ -93,7 +93,17 @@ object Parser:
 
   /** Parses a simple term or a type application. */
   private def typeApplication(using Context): Result[Syntax[TermTree]] =
-    simpleTerm
+    def loop(t: Syntax[TermTree])(using Context): Result[Syntax[TermTree]] =
+      takeIf(Token.hasTag(Token.leftBracket)) match
+        case Some(s) =>
+          typ3(using s.state).and { (argument) =>
+            take(Token.rightBracket, "']'").map { (end) =>
+              Syntax(TermTree.TypeApplication(t, argument), t.span.extendedToCover(end.span))
+            }
+          }
+          .and(loop)   
+        case _ => result(t)
+    simpleTerm.and(loop)
 
   /** Parses a simple term. */
   private def simpleTerm(using Context): Result[Syntax[TermTree]] =
