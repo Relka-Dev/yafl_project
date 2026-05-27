@@ -83,9 +83,11 @@ object Parser:
   /** Parses a simple term of the application of a prefix operator. */
   private def prefixTerm(using Context): Result[Syntax[TermTree]] =
     peek.map((t) => t.tag) match
-      case Some(Token.operator) => prefixOperator.and{ (operator) => (prefixTerm).map { (f) =>
-        Syntax(TermTree.TermApplication(operator, f), operator.span.extendedToCover(operator.span))
-      }}
+      case Some(Token.operator) => prefixOperator.and{ (operator) =>
+        prefixTerm.map { (rhs) =>
+          Syntax(TermTree.TermApplication(operator, rhs), operator.span.extendedToCover(rhs.span))
+        }
+      }
       case _ => typeApplication
 
   /** Parses a simple term or a type application. */
@@ -102,7 +104,6 @@ object Parser:
       case Some(Token.`if`) => conditional
       case Some(Token.`let`) => binding
       case Some(Token.leftBracket) => typeAbstraction
-      //case Some(Token.operator) => prefixOperator
       case _ => throw expected("term")
 
   /** Parses a Boolean literal. */
