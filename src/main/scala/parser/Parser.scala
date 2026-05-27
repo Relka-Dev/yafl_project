@@ -83,13 +83,10 @@ object Parser:
   /** Parses a simple term of the application of a prefix operator. */
   private def prefixTerm(using Context): Result[Syntax[TermTree]] =
     peek.map((t) => t.tag) match
-      case Some(Token.operator) => prefixOperator.and{ (operator) =>
-        prefixTerm.map { (rhs) =>
-          Syntax(TermTree.TermApplication(operator, rhs), operator.span.extendedToCover(rhs.span))
-        }
-      }
+      case Some(Token.operator) => prefixOperator.and{ (operator) => (prefixTerm).map { (f) =>
+        Syntax(TermTree.TermApplication(operator, f), operator.span.extendedToCover(operator.span))
+      }}
       case _ => typeApplication
-
 
   /** Parses a simple term or a type application. */
   private def typeApplication(using Context): Result[Syntax[TermTree]] =
@@ -105,6 +102,7 @@ object Parser:
       case Some(Token.`if`) => conditional
       case Some(Token.`let`) => binding
       case Some(Token.leftBracket) => typeAbstraction
+      //case Some(Token.operator) => prefixOperator
       case _ => throw expected("term")
 
   /** Parses a Boolean literal. */
@@ -154,14 +152,14 @@ object Parser:
       }
     }
   
-  private def parenthesizedTerm(using Context): Result[Syntax[TermTree]] =
+  /* private def parenthesizedTerm(using Context): Result[Syntax[TermTree]] =
     take(Token.leftParenthesis, "'('").and { (opener) =>
       term.and { (t) =>
         take(Token.rightParenthesis, "')'").map { (_) =>
           Syntax(t.value, opener.span.extendedToCover(t.span))
         }
       }
-    }
+    } */
 
   /** Parses a type abstraction
     * 
@@ -274,6 +272,7 @@ object Parser:
     peek.map((t) => t.tag) match
       case Some(Token.identifier) => typeIdentifier
       case Some(Token.leftBracket) => forAll
+      case Some(Token.leftParenthesis) => parenthesizedType
       case _ => throw expected("type")
 
   /** Parses a type identifier. */
@@ -320,5 +319,14 @@ object Parser:
   /** Returns a result wrapping `value` together with the current context. */
   private def result[T](value: T)(using Context): Result[T] =
     yafl.Result(value)
+
+  private def parenthesizedType(using Context): Result[Syntax[TypeTree]] =
+    take(Token.leftParenthesis, "'('").and { (opener) =>
+      typ3.and { (t) =>
+        take(Token.rightParenthesis, "')'").map { (closer) =>
+          Syntax(t.value, opener.span.extendedToCover(closer.span))
+        }
+      }
+    }
 
 end Parser
