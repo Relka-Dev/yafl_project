@@ -128,7 +128,7 @@ All tasks have an associated test that you can use to exercise your implementati
 
   Like for type abstractions, although the grammar specifies that a universal type may be introduced with more than one type variable, you can implement this step assuming that there is exactly one.
 
-- [ ] **Arrow types** (required)
+- [X] **Arrow types** (required)
 
   Arrow types have the form `T -> U`.
   Consequently, unlike the constructions mentioned above, the parser cannot simply use a single token to recognize the start of an arrow.
@@ -142,14 +142,14 @@ All tasks have an associated test that you can use to exercise your implementati
   One describes functions from `T` to `U -> V`, the other describes functions from `T -> U` to `V`.
   Fortunately, since no other type construction involves parentheses, the occurrence of an opening parenthesis at the start of a type expression signals the presence of a parenthesized type.
 
-- [ ] **Type applications** (required)
+- [X] **Type applications** (required)
 
   Type applications have the form `e [T]`.
   Similarly to arrow types, the occurrence of a left bracket following a term signals the presence of a type application.
 
   Although the grammar specifies that more than one type argument may be supplied, you can implement this step assuming that all type applications have exactly one argument.
 
-- [ ] **Recursive abstractions** (required)
+- [X] **Recursive abstractions** (required)
 
   Recursive type abstractions have the form `fix x : T = f` where `x` is an identifier, `T` a type, and `f` an arbitrary term.
   Since the construction starts with a dedicated token, it can be recognized in the same way as other simple terms like bindings and conditionals.

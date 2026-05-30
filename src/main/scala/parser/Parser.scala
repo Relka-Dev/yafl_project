@@ -113,6 +113,7 @@ object Parser:
       case Some(Token.leftParenthesis) => lambdaOrParenthesized
       case Some(Token.`if`) => conditional
       case Some(Token.`let`) => binding
+      case Some(Token.fix) => recursiveTypeAbstraction
       case Some(Token.leftBracket) => typeAbstraction
       case _ => throw expected("term")
 
@@ -172,9 +173,7 @@ object Parser:
       }
     } */
 
-  /** Parses a type abstraction
-    * 
-    * Format : [T] => body
+  /** Parses a type abstraction (such as `[T] => body`).
     * 
     * Requirements
     *   - Next token : "["
@@ -195,7 +194,7 @@ object Parser:
       }
     }
 
-  /** Parse an universal Type (aka ForAll) */
+  /** Parse an universal Type (aka ForAll). */
   private def forAll(using Context): Result[Syntax[TypeTree.ForAll]] =
     take(Token.leftBracket, "'['").and { (opener) =>
       typeIdentifier.and { (parameter) =>
@@ -210,6 +209,25 @@ object Parser:
           }
         }
       }     
+    }
+
+  /** Parses a recursive abstraction (such as `fix x : T = f`). */
+  private def recursiveTypeAbstraction(using Context): Result[Syntax[TermTree.RecursiveAbstraction]] = 
+    take(Token.fix, "'fix'").and { (opener) => 
+      termIdentifier.and { (name) =>
+        take(Token.colon, "':'").and{ (colon) =>
+          typ3.and { (typ) => 
+            take(Token.equal, "'='").and { (eq) =>
+              term.map { (body) =>
+                Syntax(
+                  TermTree.RecursiveAbstraction(name, typ, body),
+                  opener.span.extendedToCover(body.span)
+                )  
+              }
+            }
+          }
+        }
+      }
     }
 
   /** Parses an infix operator. */
@@ -276,7 +294,16 @@ object Parser:
 
   /** Parses a type. */
   private def typ3(using Context): Result[Syntax[TypeTree]] =
-    simpleType
+    simpleType.and { (lhs) =>
+      // If there is a `thinArrow`, parse as an arrowType
+      // else, keep the simpleType
+      takeIf(Token.hasTag(Token.thinArrow)) match
+        case Some(s) => s.and { (arrow) => {
+            typ3.map { (rhs) => Syntax(TypeTree.Arrow(lhs, rhs), lhs.span.extendedToCover(rhs.span)) }
+          }
+        }
+        case _ => result(lhs)
+    }
 
   /** Parses a simple type. */
   private def simpleType(using Context): Result[Syntax[TypeTree]] =
