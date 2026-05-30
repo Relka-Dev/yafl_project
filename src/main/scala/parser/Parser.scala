@@ -114,6 +114,7 @@ object Parser:
       case Some(Token.leftParenthesis) => lambdaOrParenthesized
       case Some(Token.`if`) => conditional
       case Some(Token.`let`) => binding
+      case Some(Token.fix) => recursiveTypeAbstraction
       case Some(Token.leftBracket) => typeAbstraction
       case _ => throw expected("term")
 
@@ -173,9 +174,7 @@ object Parser:
       }
     }
 
-  /** Parses a type abstraction
-    * 
-    * Format : [T] => body
+  /** Parses a type abstraction (such as `[T] => body`).
     * 
     * Requirements
     *   - Next token : "["
@@ -211,6 +210,25 @@ object Parser:
           }
         }
       }     
+    }
+
+  /** Parses a recursive abstraction (such as `fix x : T = f`). */
+  private def recursiveTypeAbstraction(using Context): Result[Syntax[TermTree.RecursiveAbstraction]] = 
+    take(Token.fix, "'fix'").and { (opener) => 
+      termIdentifier.and { (name) =>
+        take(Token.colon, "':'").and{ (colon) =>
+          typ3.and { (typ) => 
+            take(Token.equal, "'='").and { (eq) =>
+              term.map { (body) =>
+                Syntax(
+                  TermTree.RecursiveAbstraction(name, typ, body),
+                  opener.span.extendedToCover(body.span)
+                )  
+              }
+            }
+          }
+        }
+      }
     }
 
   /** Parses an infix operator. */
