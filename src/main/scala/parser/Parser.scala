@@ -332,16 +332,6 @@ object Parser:
       case Some(Token.leftParenthesis) => parenthesizedType
       case _ => throw expected("type")
 
-  /** Parses a type in parentheses to override default arrow precedence. */
-  private def parenthesizedType(using Context): Result[Syntax[TypeTree]] =
-    take(Token.leftParenthesis, "'('").and { (opener) =>
-      typ3.and { (t) =>
-        take(Token.rightParenthesis, "')'").map { (_) =>
-          Syntax(t.value, opener.span.extendedToCover(t.span))
-        }
-      }
-    }
-
   /** Parses a type identifier. */
   private def typeIdentifier(using Context): Result[Syntax[TypeTree.Variable]] =
     take(Token.identifier, "identifier")
