@@ -78,6 +78,12 @@ object Emitter:
             val operation = f match
               case InfixOperator.Add => "(i32.add)"
               case InfixOperator.Sub => "(i32.sub)"
+              case InfixOperator.Mul => "(i32.mul)"
+              case InfixOperator.Div => "(i32.div_u)"
+              case InfixOperator.Great => "(i32.gt)"
+              case InfixOperator.Less =>  "(i32.lt)"
+              case InfixOperator.Equal => "(i32.eq)"
+              case InfixOperator.NotEqual => "(i32.ne)"
             lhs ++ rhs ++ operation
           })
 

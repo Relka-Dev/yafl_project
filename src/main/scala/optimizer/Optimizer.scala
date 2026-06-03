@@ -58,9 +58,21 @@ object Optimizer:
     tree.value match
       case F(Syntax(F(InfixOperator(f), IntegerConstant(lhs)), _), IntegerConstant(rhs)) =>
         val n = f match
+          // Arithmetic (returns an Integer)
           case InfixOperator.Add => lhs + rhs
           case InfixOperator.Sub => lhs - rhs
-        Some(Syntax(TermTree.IntegerLiteral(n), tree.span))
+          case InfixOperator.Mul => lhs * rhs
+          case InfixOperator.Div => lhs / rhs
+          // Comparison (returns a bool)
+          case InfixOperator.Great => lhs > rhs
+          case InfixOperator.Less =>  lhs < rhs
+          case InfixOperator.Equal => lhs == rhs
+          case InfixOperator.NotEqual => lhs != rhs
+
+        n match 
+          case i: Int => Some(Syntax(TermTree.IntegerLiteral(i), tree.span))
+          case b: Boolean => Some(Syntax(TermTree.BooleanLiteral(b), tree.span))
+
       case _ => None
 
 end Optimizer
