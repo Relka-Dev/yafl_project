@@ -90,19 +90,29 @@ object Parser:
       }
       case _ => typeApplication
 
-  /** Parses a simple term or a type application. */
+
+  /** Parses a simple term or a type application, supporting multiple comma-separated arguments */
   private def typeApplication(using Context): Result[Syntax[TermTree]] =
     def loop(t: Syntax[TermTree])(using Context): Result[Syntax[TermTree]] =
       takeIf(Token.hasTag(Token.leftBracket)) match
         case Some(s) =>
-          typ3(using s.state).and { (argument) =>
-            take(Token.rightBracket, "']'").map { (end) =>
-              Syntax(TermTree.TypeApplication(t, argument), t.span.extendedToCover(end.span))
+          typ3(using s.state)
+            .and(arg => trailingTypeArguments(t, arg))
+            .and { (applied) =>
+              take(Token.rightBracket, "']'").map { (end) =>
+                Syntax(applied.value, applied.span.extendedToCover(end.span))
+              }
             }
-          }
-          .and(loop)   
+            .and(loop)
         case _ => result(t)
     simpleTerm.and(loop)
+
+  /** Parses a type application with one or more comma-separated type arguments*/
+  private def trailingTypeArguments(callee: Syntax[TermTree], arg: Syntax[TypeTree])(using Context): Result[Syntax[TermTree]] =
+    val app = Syntax(TermTree.TypeApplication(callee, arg), callee.span.extendedToCover(arg.span))
+    takeIf(Token.hasTag(Token.comma)) match
+      case Some(s) => typ3(using s.state).and(trailingTypeArguments(app, _))
+      case _ => result(app)
 
   /** Parses a simple term. */
   private def simpleTerm(using Context): Result[Syntax[TermTree]] =
@@ -173,42 +183,41 @@ object Parser:
       }
     } */
 
-  /** Parses a type abstraction (such as `[T] => body`).
-    * 
-    * Requirements
-    *   - Next token : "["
+  /** Parses a type abstraction with one or more type parameters (such as `[T] => body`
     */
-  private def typeAbstraction(using Context): Result[Syntax[TermTree.TypeAbstraction]] =
+  private def typeAbstraction(using Context): Result[Syntax[TermTree]] =
     take(Token.leftBracket, "'['").and { (opener) =>
-      typeIdentifier.and { (parameter) =>
-        take(Token.rightBracket, "']'").and { (_) =>
-          take(Token.thickArrow, "'=>'").and { (_) =>
-            term.map { (body) =>
-              Syntax(
-                TermTree.TypeAbstraction(parameter, body),
-                opener.span.extendedToCover(body.span)
-              )
+      typeIdentifier.and { (first) =>
+        trailingTypeParameters(List(first)).and { (params) =>
+          take(Token.rightBracket, "']'").and { (_) =>
+            take(Token.thickArrow, "'=>'").and { (_) =>
+              term.map { (body) =>
+                params.foldLeft(body) { (b, p) =>
+                  Syntax(TermTree.TypeAbstraction(p, b), p.span.extendedToCover(b.span))
+                }
+              }
             }
           }
         }
       }
     }
 
-  /** Parse an universal Type (aka ForAll). */
-  private def forAll(using Context): Result[Syntax[TypeTree.ForAll]] =
+  /** Parses a universal type with one or more type variables*/
+  private def forAll(using Context): Result[Syntax[TypeTree]] =
     take(Token.leftBracket, "'['").and { (opener) =>
-      typeIdentifier.and { (parameter) =>
-        take(Token.rightBracket, "']'").and { (_) =>
-          take(Token.thickArrow, "'=>'").and { (_) =>
-            typ3.map { (body) =>                
-              Syntax(
-                TypeTree.ForAll(parameter, body),
-                opener.span.extendedToCover(body.span)
-              )
+      typeIdentifier.and { (first) =>
+        trailingTypeParameters(List(first)).and { (params) =>
+          take(Token.rightBracket, "']'").and { (_) =>
+            take(Token.thickArrow, "'=>'").and { (_) =>
+              typ3.map { (body) =>
+                params.foldLeft(body) { (b, p) =>
+                  Syntax(TypeTree.ForAll(p, b), p.span.extendedToCover(b.span))
+                }
+              }
             }
           }
         }
-      }     
+      }
     }
 
   /** Parses a recursive abstraction (such as `fix x : T = f`). */
@@ -292,6 +301,15 @@ object Parser:
           .and(p => trailingTermParameters(p :: ps))
       case _ => result(ps)
 
+/** Parses a (possibly empty) list of type variables, each prefixed by a leading comma. */
+  private def trailingTypeParameters(ps: List[Syntax[TypeTree.Variable]])(using Context): Result[List[Syntax[TypeTree.Variable]]] =
+    takeIf(Token.hasTag(Token.comma)) match
+      case Some(separator) =>
+        typeIdentifier(using separator.state)
+          .and(p => trailingTypeParameters(p :: ps))  
+      case _ => result(ps)
+
+
   /** Parses a type. */
   private def typ3(using Context): Result[Syntax[TypeTree]] =
     simpleType.and { (lhs) =>
@@ -311,7 +329,18 @@ object Parser:
       case Some(Token.identifier) => typeIdentifier
       case Some(Token.leftBracket) => forAll
       case Some(Token.leftParenthesis) => parenthesizedType
+      case Some(Token.leftParenthesis) => parenthesizedType
       case _ => throw expected("type")
+
+  /** Parses a type in parentheses to override default arrow precedence. */
+  private def parenthesizedType(using Context): Result[Syntax[TypeTree]] =
+    take(Token.leftParenthesis, "'('").and { (opener) =>
+      typ3.and { (t) =>
+        take(Token.rightParenthesis, "')'").map { (_) =>
+          Syntax(t.value, opener.span.extendedToCover(t.span))
+        }
+      }
+    }
 
   /** Parses a type identifier. */
   private def typeIdentifier(using Context): Result[Syntax[TypeTree.Variable]] =
