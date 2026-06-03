@@ -114,14 +114,14 @@ All tasks have an associated test that you can use to exercise your implementati
 
   Although the grammar specifies that more than one type parameter may be supplied, you can implement this step assuming that all type abstractions have exactly one parameter.
 
-- [ ] **Prefix terms** (required)
+- [X] **Prefix terms** (required)
 
   Prefix terms have the form `f e`, where `f` is an operator, meaning that the occurrence of an operator at the start of a term signals the presence of a prefix term.
   In other words, the parser can apply a similar strategy as the one used for simple terms, with two caveats.
   First, *any* operator can be recognized at the start rather than one specific token.
   Second, a prefix term is not considered a simple term because it cannot occur at the right-hand side of a term application, lest the expression `x + y` would become ambiguous.
 
-- [ ] **Universal types** (required)
+- [X] **Universal types** (required)
 
   Universal types (aka *forall*) have almost the same form as type abstractions but can only occur in type positions.
   In other words, the occurrence of an opening left brace can be interpreted as either a type abstraction or a universal type depending on the production rule being applied.
@@ -158,7 +158,7 @@ All tasks have an associated test that you can use to exercise your implementati
   In other words, these tests will fail unless your parser can properly recognize a term expression of the form `T -> U`.
   You can still write your own tests using simpler types, though.
 
-- [ ] **Multiple parameters and arguments** (optional)
+- [X] **Multiple parameters and arguments** (optional)
 
   According to the grammar, several production rules can recognize comma-separated sequences of certain constructions.
   For example, a term abstraction can be written with more than one parameter (e.g., `(x : Int, y: Int) => x + y`).
@@ -204,7 +204,7 @@ These can be implemented in any order, but note that normalization may help dram
 Most available tests may require the application of more than one optimization to pass.
 Further, all tests rely on the parser behaving correctly.
 
-- [ ] **Normalization** (optional)
+- [X] **Normalization** (optional)
 
   Equivalent programs can come in many shapes.
   For example, `1 + x + 2` computes the same value as `1 + 2 + x`.
