@@ -50,5 +50,9 @@
 
 # Built-in arithmetic and comparison
 - Person: David
-- File:
+- Files:
+  - `src/main/scala/emitter/Emitter.scala`
+  - `src/main/scala/optimizer/Optimizer.scala`
+  - `src/main/scala/syntax/InfixOperator.scala`
+  - `src/test/scala/Emitter.scala`
 - Lign: 

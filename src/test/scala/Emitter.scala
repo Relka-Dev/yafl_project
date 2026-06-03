@@ -30,6 +30,45 @@ final class EmitterTests extends munit.FunSuite:
     val main = compile(input).`export`("main")
     assertEquals(main.apply()(0), 42L)
 
+  test("integer substraction"):
+    val input = SourceFile("test", "40 - 2")
+    val main = compile(input).`export`("main")
+    assertEquals(main.apply()(0), 38L)
+
+  test("integer multiplication"):
+    val input = SourceFile("test", "6 * 7")
+    val main = compile(input).`export`("main")
+    assertEquals(main.apply()(0), 42L)
+
+  test("integer division"):
+    val input = SourceFile("test", "40 / 2")
+    val main = compile(input).`export`("main")
+    assertEquals(main.apply()(0), 20L)
+
+  test("integer equal comparison"):
+    val input = SourceFile("test", "20 == 20")
+    val main = compile(input).`export`("main")
+    // 1L for true, 0L for false
+    assertEquals(main.apply()(0), 1L)
+    assertNotEquals(main.apply()(0), 0L)
+
+  test("integer not equal comparison"):
+    val input = SourceFile("test", "2005 != 2004")
+    val main = compile(input).`export`("main")
+    assertEquals(main.apply()(0), 1L)
+
+  test("integer greater than comparison"):
+    val input = SourceFile("test", "67 > 21")
+    val main = compile(input).`export`("main")
+    // 1L for true, 0L for false
+    assertEquals(main.apply()(0), 1L)
+
+  test("integer less than comparison"):
+    val input = SourceFile("test", "20 < 67")
+    val main = compile(input).`export`("main")
+    // 1L for true, 0L for false
+    assertEquals(main.apply()(0), 1L)
+
   /** Compiles `input` to a WebAssembly module and returns an instance of it. */
   private def compile(input: SourceFile): chicory.runtime.Instance =
     val program =  Optimizer.optimize(Typer.check(Parser.parse(input)))
