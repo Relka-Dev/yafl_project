@@ -1,0 +1,2 @@
+let f = [T, U] => 42 ;
+f [Int, Bool]
