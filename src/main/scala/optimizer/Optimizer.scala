@@ -48,8 +48,8 @@ object Optimizer:
   private def normalize(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
     import TermTree.TermApplication as F
     tree.value match
-      case F(Syntax(F(op, lhs), inner), rhs) if !lhs.value.isInstanceOf[TermTree.IntegerLiteral] && rhs.value.isInstanceOf[TermTree.IntegerLiteral] =>
-        Some(Syntax(F(Syntax(F(op, rhs), inner), lhs), tree.span))
+      case F(Syntax(F(operator, lhs), inner), rhs) if !lhs.value.isInstanceOf[TermTree.IntegerLiteral] && rhs.value.isInstanceOf[TermTree.IntegerLiteral] =>
+        Some(Syntax(F(Syntax(F(operator, rhs), inner), lhs), tree.span))
       case _ => None
 
   /** Returns a literal denoting the result of `tree` iff it represents a constant expression. */
