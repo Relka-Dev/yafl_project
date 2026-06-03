@@ -35,6 +35,7 @@ object Optimizer:
             case _ => (updated, (ts ++ us).updated(updated, types(tree)))
 
         case e: TermTree.Binding =>
+          // Apply the optimization recursively and remove the binding if the variable is unused
           val (initializer, ts) = constantFoldRecursively(e.initializer, types)
           val (body, us) = constantFoldRecursively(e.body, types)
           val updated = Syntax(TermTree.Binding(e.name, initializer, body), tree.span)
@@ -43,6 +44,8 @@ object Optimizer:
             case _ => (updated, (ts ++ us).updated(updated, types(tree)))
 
         case e: TermTree.Conditional =>
+          // apply the optimization recursively and eliminate the conditional
+          // if the condition is a known boolean
           val (condition, ts) = constantFoldRecursively(e.condition, types)
           val (success, us) = constantFoldRecursively(e.success, types)
           val (failure, vs) = constantFoldRecursively(e.failure, types)
