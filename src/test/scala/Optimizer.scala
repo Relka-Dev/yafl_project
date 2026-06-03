@@ -26,6 +26,26 @@ final class OptimizerTests extends munit.FunSuite:
         (lhs.value : @unchecked) match
           case F(_, Syntax(TermTree.IntegerLiteral(1), _)) => ()
 
+  test("dead code — if true"):
+    val optimized = optimize("if true then 1 else 2")
+    (optimized.syntax.value : @unchecked) match
+      case TermTree.IntegerLiteral(1) => ()
+
+  test("dead code — if false"):
+    val optimized = optimize("if false then 1 else 2")
+    (optimized.syntax.value : @unchecked) match
+      case TermTree.IntegerLiteral(2) => ()
+
+  test("dead code — folded condition"):
+    val optimized = optimize("if 5 == 5 then 1 else 2")
+    (optimized.syntax.value : @unchecked) match
+      case TermTree.IntegerLiteral(1) => ()
+
+  test("dead code — unused binding"):
+    val optimized = optimize("let x = 99 ; 42")
+    (optimized.syntax.value : @unchecked) match
+      case TermTree.IntegerLiteral(42) => ()
+
   /** Compiles `input` to a WebAssembly module and returns an instance of it. */
   private def optimize(input: String): TypedProgram =
     Optimizer.optimize(Typer.check(Parser.parse(SourceFile("test", input))))

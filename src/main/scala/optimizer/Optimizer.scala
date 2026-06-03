@@ -10,8 +10,9 @@ object Optimizer:
     val (optimized, updated) = constantFoldRecursively(program.syntax, program.types)
     TypedProgram(optimized, updated)
 
-  /** Substitutes constant expressions in `tree` with their results, returning a an updated syntax
-    * tree along with a map from each term to its type.
+  /** Substitutes constant expressions in `tree` with their results, returning an updated syntax
+    * tree along with a map from each term to its type. Also applies normalization and dead code
+    * elimination.
     */
   private def constantFoldRecursively(
       tree: Syntax[TermTree], types: TypedProgram.TypeAssignments
@@ -34,7 +35,7 @@ object Optimizer:
             case _ => (updated, (ts ++ us).updated(updated, types(tree)))
 
         case e: TermTree.Binding =>
-          // apply the optimization recursively
+          // Apply the optimization recursively and remove the binding if the variable is unused
           val (initializer, ts) = constantFoldRecursively(e.initializer, types)
           if (initializer.value.isInstanceOf[TermTree.IntegerLiteral]) {
             // If the initializer is a constant, substitute it in the body.
@@ -43,8 +44,21 @@ object Optimizer:
           } else {
           val (body, us) = constantFoldRecursively(e.body, types)
           val updated = Syntax(TermTree.Binding(e.name, e.initializer, body), tree.span)
-          (updated, (ts ++ us).updated(updated, types(tree)))
+          deadCodeEliminate(updated) match
+            case Some(s) => (s, Map(s -> types(tree)))
+            case _ => (updated, (ts ++ us).updated(updated, types(tree)))
           }
+
+        case e: TermTree.Conditional =>
+          // apply the optimization recursively and eliminate the conditional
+          // if the condition is a known boolean
+          val (condition, ts) = constantFoldRecursively(e.condition, types)
+          val (success, us) = constantFoldRecursively(e.success, types)
+          val (failure, vs) = constantFoldRecursively(e.failure, types)
+          val updated = Syntax(TermTree.Conditional(condition, success, failure), tree.span)
+          deadCodeEliminate(updated) match
+            case Some(s) => (s, Map(s -> types(tree)))
+            case _ => (updated, (ts ++ us ++ vs).updated(updated, types(tree)))
 
         case e: TermTree.TermAbstraction =>
           val (body, ts) = constantFoldRecursively(e.body, types)
@@ -54,6 +68,30 @@ object Optimizer:
         case _ =>
           (tree, Map(tree -> types(tree)))
   }
+
+  /** Eliminates dead code: removes conditionals with known condition and variable that are never used.*/
+  private def deadCodeEliminate(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
+    tree.value match
+      case TermTree.Conditional(Syntax(TermTree.BooleanLiteral(true), _), success, _) =>
+        Some(success)
+      case TermTree.Conditional(Syntax(TermTree.BooleanLiteral(false), _), _, failure) =>
+        Some(failure)
+      case TermTree.Binding(name, _, body) if !occursIn(name.value.name, body) =>
+        Some(body)
+      case _ => None
+
+  /** Returns true if the variable is used anywhere in the tree. */
+  private def occursIn(name: String, tree: Syntax[TermTree]): Boolean =
+    tree.value match
+      case TermTree.Variable(n) => n == name
+      case TermTree.TermApplication(f, a) => occursIn(name, f) || occursIn(name, a)
+      case TermTree.TermAbstraction(p, _, b) => p.value.name != name && occursIn(name, b)
+      case TermTree.TypeAbstraction(_, b) => occursIn(name, b)
+      case TermTree.TypeApplication(f, _) => occursIn(name, f)
+      case TermTree.Conditional(c, s, f) => occursIn(name, c) || occursIn(name, s) || occursIn(name, f)
+      case TermTree.Binding(n, init, body) => occursIn(name, init) || (n.value.name != name && occursIn(name, body))
+      case TermTree.RecursiveAbstraction(n, _, definition) => n.value.name != name && occursIn(name, definition)
+      case _ => false
 
   /** Returns a normalized form by moving constants to the left*/
   private def normalize(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
