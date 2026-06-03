@@ -28,14 +28,29 @@ object Optimizer:
           val (a, us) = constantFoldRecursively(e.argument, types)
           val updated = Syntax(TermTree.TermApplication(f, a), tree.span)
 
-          // Fold the result if possible.
-          constantFold(updated) match
+          // Fold or normalize the result if possible.
+          constantFold(updated).orElse(normalize(updated)) match
             case Some(s) => (s, Map(s -> types(tree)))
             case _ => (updated, (ts ++ us).updated(updated, types(tree)))
+
+        case e: TermTree.Binding =>
+          // apply the optimization recursively
+          val (initializer, ts) = constantFoldRecursively(e.initializer, types)
+          val (body, us) = constantFoldRecursively(e.body, types)
+          val updated = Syntax(TermTree.Binding(e.name, initializer, body), tree.span)
+          (updated, (ts ++ us).updated(updated, types(tree)))
 
         case _ =>
           (tree, Map(tree -> types(tree)))
   }
+
+  /** Returns a normalized form by moving constants to the left*/
+  private def normalize(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
+    import TermTree.TermApplication as F
+    tree.value match
+      case F(Syntax(F(operator, lhs), inner), rhs) if !lhs.value.isInstanceOf[TermTree.IntegerLiteral] && rhs.value.isInstanceOf[TermTree.IntegerLiteral] =>
+        Some(Syntax(F(Syntax(F(operator, rhs), inner), lhs), tree.span))
+      case _ => None
 
   /** Returns a literal denoting the result of `tree` iff it represents a constant expression. */
   private def constantFold(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
