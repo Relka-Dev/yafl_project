@@ -329,7 +329,6 @@ object Parser:
       case Some(Token.identifier) => typeIdentifier
       case Some(Token.leftBracket) => forAll
       case Some(Token.leftParenthesis) => parenthesizedType
-      case Some(Token.leftParenthesis) => parenthesizedType
       case _ => throw expected("type")
 
   /** Parses a type identifier. */
@@ -377,6 +376,7 @@ object Parser:
   private def result[T](value: T)(using Context): Result[T] =
     yafl.Result(value)
 
+  /**  Returns a type in parentheses to override default arrow precedence. **/
   private def parenthesizedType(using Context): Result[Syntax[TypeTree]] =
     take(Token.leftParenthesis, "'('").and { (opener) =>
       typ3.and { (t) =>
