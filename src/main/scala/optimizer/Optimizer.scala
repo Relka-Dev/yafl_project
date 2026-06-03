@@ -42,9 +42,14 @@ object Optimizer:
             constantFoldRecursively(substitutedBody, types ++ ts ++ substitutedTypes)
           } else {
           val (body, us) = constantFoldRecursively(e.body, types)
-          val updated = Syntax(TermTree.Binding(e.name, initializer, body), tree.span)
+          val updated = Syntax(TermTree.Binding(e.name, e.initializer, body), tree.span)
           (updated, (ts ++ us).updated(updated, types(tree)))
           }
+
+        case e: TermTree.TermAbstraction =>
+          val (body, ts) = constantFoldRecursively(e.body, types)
+          val updated = Syntax(TermTree.TermAbstraction(e.parameter, e.ascription, body), tree.span)
+          (updated, Map(updated -> types(tree)))
 
         case _ =>
           (tree, Map(tree -> types(tree)))
