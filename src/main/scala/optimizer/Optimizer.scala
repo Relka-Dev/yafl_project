@@ -93,6 +93,19 @@ object Optimizer:
       case TermTree.RecursiveAbstraction(n, _, definition) => n.value.name != name && occursIn(name, definition)
       case _ => false
 
+  private def substitute(tree: Syntax[TermTree], name: String, argument: Syntax[TermTree]): Syntax[TermTree] =
+    tree.value match
+      case TermTree.Variable(n) => if n == name then argument else tree // Beta reduction
+      case TermTree.TermApplication(f, a) => Syntax(TermTree.TermApplication(substitute(f, name, argument), substitute(a, name, argument)), tree.span)
+      case TermTree.TermAbstraction(p, t, b) => if p.value.name != name then Syntax(TermTree.TermAbstraction(p, t, substitute(b, name, argument)), tree.span) else tree
+      case TermTree.Conditional(c, s, f) => Syntax(TermTree.Conditional(substitute(c, name, argument), substitute(s, name, argument), substitute(f, name, argument)), tree.span)
+      case TermTree.TypeApplication(f, t) => Syntax(TermTree.TypeApplication(substitute(f, name, argument), t), tree.span)
+      case TermTree.TypeAbstraction(t, b) => Syntax(TermTree.TypeAbstraction(t, substitute(b, name, argument)), tree.span)
+
+        
+
+    
+
   /** Returns a normalized form by moving constants to the left*/
   private def normalize(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
     import TermTree.TermApplication as F
