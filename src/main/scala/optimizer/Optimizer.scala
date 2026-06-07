@@ -29,10 +29,21 @@ object Optimizer:
           val (a, us) = constantFoldRecursively(e.argument, types)
           val updated = Syntax(TermTree.TermApplication(f, a), tree.span)
 
-          // Fold or normalize the result if possible.
-          constantFold(updated).orElse(normalize(updated)) match
-            case Some(s) => (s, Map(s -> types(tree)))
-            case _ => (updated, (ts ++ us).updated(updated, types(tree)))
+          // (Lines 34 to 42 were done with the help of a LLM)
+          // Check if we can perform beta reduction
+          val betaReduced: Option[Syntax[TermTree]] = f.value match
+            case TermTree.TermAbstraction(param, _, body) =>
+              Some(substitute(body, param.value.name, a))
+            case _ => None
+
+          betaReduced match
+            case Some(reduced) =>
+              // Re-optimize the beta-reduced term
+              constantFoldRecursively(reduced, ts ++ us + (reduced -> types(tree)))
+            case None =>
+              constantFold(updated).orElse(normalize(updated)) match
+                case Some(s) => (s, Map(s -> types(tree)))
+                case _ => (updated, (ts ++ us).updated(updated, types(tree)))
 
         case e: TermTree.Binding =>
           // Apply the optimization recursively and remove the binding if the variable is unused
@@ -93,18 +104,26 @@ object Optimizer:
       case TermTree.RecursiveAbstraction(n, _, definition) => n.value.name != name && occursIn(name, definition)
       case _ => false
 
+  /** Substitutes all occurrences of a variable with a term. */
   private def substitute(tree: Syntax[TermTree], name: String, argument: Syntax[TermTree]): Syntax[TermTree] =
+    if !occursIn(name, tree) then return tree
+
     tree.value match
       case TermTree.Variable(n) => if n == name then argument else tree // Beta reduction
       case TermTree.TermApplication(f, a) => Syntax(TermTree.TermApplication(substitute(f, name, argument), substitute(a, name, argument)), tree.span)
-      case TermTree.TermAbstraction(p, t, b) => if p.value.name != name then Syntax(TermTree.TermAbstraction(p, t, substitute(b, name, argument)), tree.span) else tree
+      case TermTree.TermAbstraction(p, t, b) => if p.value.name != name 
+        then Syntax(TermTree.TermAbstraction(p, t, substitute(b, name, argument)), tree.span) 
+        else tree
+      case TermTree.TypeAbstraction(t, b) => Syntax(TermTree.TypeAbstraction(t, substitute(b, name, argument)), tree.span)
       case TermTree.Conditional(c, s, f) => Syntax(TermTree.Conditional(substitute(c, name, argument), substitute(s, name, argument), substitute(f, name, argument)), tree.span)
       case TermTree.TypeApplication(f, t) => Syntax(TermTree.TypeApplication(substitute(f, name, argument), t), tree.span)
-      case TermTree.TypeAbstraction(t, b) => Syntax(TermTree.TypeAbstraction(t, substitute(b, name, argument)), tree.span)
-
-        
-
-    
+      case TermTree.Binding(n, init, body) => if n.value.name != name 
+        then Syntax(TermTree.Binding(n, substitute(init, name, argument), substitute(body, name, argument)), tree.span) 
+        else Syntax(TermTree.Binding(n, substitute(init, name, argument), body), tree.span)
+      case TermTree.RecursiveAbstraction(n, t, definition) => if n.value.name != name
+        then Syntax(TermTree.RecursiveAbstraction(n, t, substitute(definition, name, argument)), tree.span)
+        else Syntax(TermTree.RecursiveAbstraction(n, t, definition), tree.span)
+      case _ => tree
 
   /** Returns a normalized form by moving constants to the left*/
   private def normalize(tree: Syntax[TermTree]): Option[Syntax[TermTree]] =
@@ -137,36 +156,56 @@ object Optimizer:
 
       case _ => None
   
+  /** Replace variables with their constant values, if possible. */
   private def constantPropagation(body: Syntax[TermTree], name: Syntax[TermTree.Variable], value: Syntax[TermTree], types: TypedProgram.TypeAssignments): (Syntax[TermTree], TypedProgram.TypeAssignments) = 
-    import TermTree.{Binding as F, Variable as V}
     body.value match
-      case V(n) if n == name.value.name => (value, Map(value -> types(body)))
-      case F(param, initializer, bodyExpr) if param.value.name != name.value.name =>
+      case TermTree.Variable(n) if n == name.value.name => (value, Map(value -> types(body)))
+
+      case TermTree.Binding(param, initializer, bodyExpr) if param.value.name != name.value.name =>
         val (substitutedInitializer, ts) = constantPropagation(initializer, name, value, types)
         val (substitutedBody, us) = constantPropagation(bodyExpr, name, value, types)
-        val updated = Syntax(F(param, substitutedInitializer, substitutedBody), body.span)
+        val updated = Syntax(TermTree.Binding(param, substitutedInitializer, substitutedBody), body.span)
         (updated, (ts ++ us).updated(updated, types(body)))
-      case app: TermTree.TermApplication =>
-        val (substitutedAbstraction, ts) = constantPropagation(app.abstraction, name, value, types)
-        val (substitutedArgument, us) = constantPropagation(app.argument, name, value, types)
+
+      case TermTree.Binding(_, initializer, bodyExpr) =>
+        val (substitutedInitializer, ts) = constantPropagation(initializer, name, value, types)
+        val updated = Syntax(TermTree.Binding(name, substitutedInitializer, bodyExpr), body.span)
+        (updated, ts.updated(updated, types(body)))
+
+      case TermTree.TermApplication(abstraction, argument) =>
+        val (substitutedAbstraction, ts) = constantPropagation(abstraction, name, value, types)
+        val (substitutedArgument, us) = constantPropagation(argument, name, value, types)
         val updated = Syntax(TermTree.TermApplication(substitutedAbstraction, substitutedArgument), body.span)
         (updated, (ts ++ us).updated(updated, types(body)))
+
+      case TermTree.TermAbstraction(param, ascription, bodyExpr) if param.value.name != name.value.name =>
+        val (substitutedBody, ts) = constantPropagation(bodyExpr, name, value, types)
+        val updated = Syntax(TermTree.TermAbstraction(param, ascription, substitutedBody), body.span)
+        (updated, ts.updated(updated, types(body)))
+
+      case TermTree.TypeAbstraction(param, bodyExpr) =>
+        val (substitutedBody, ts) = constantPropagation(bodyExpr, name, value, types)
+        val updated = Syntax(TermTree.TypeAbstraction(param, substitutedBody), body.span)
+        (updated, ts.updated(updated, types(body)))
+
+      case TermTree.TypeApplication(abstraction, argument) =>
+        val (substitutedAbstraction, ts) = constantPropagation(abstraction, name, value, types)
+        val updated = Syntax(TermTree.TypeApplication(substitutedAbstraction, argument), body.span)
+        (updated, ts.updated(updated, types(body)))
+      
+      case TermTree.Conditional(condition, success, failure) =>
+        val (substitutedCondition, ts) = constantPropagation(condition, name, value, types)
+        val (substitutedSuccess, us) = constantPropagation(success, name, value, types)
+        val (substitutedFailure, vs) = constantPropagation(failure, name, value, types)
+        val updated = Syntax(TermTree.Conditional(substitutedCondition, substitutedSuccess, substitutedFailure), body.span)
+        (updated, (ts ++ us ++ vs).updated(updated, types(body)))
+
+      case TermTree.RecursiveAbstraction(param, ascription, definition) if param.value.name != name.value.name =>
+        val (substitutedDefinition, ts) = constantPropagation(definition, name, value, types)
+        val updated = Syntax(TermTree.RecursiveAbstraction(param, ascription, substitutedDefinition), body.span)
+        (updated, ts.updated(updated, types(body)))
+      
       case _ => (body, Map(body -> types(body)))
-  
-  /** Replace variables with their constant values, if possible. */
-  /* private def constantPropagation(tree: Syntax[TermTree], types: Map[Syntax[TermTree], Type]): Option[Syntax[TermTree]] =
-    import TermTree.Binding as F
-    tree.value match
-      case F(name, initializer, body) =>
-        // If the initializer is a constant, substitute it in the body.
-        if (initializer.value.isInstanceOf[TermTree.IntegerLiteral]) {
-          Some(substitute(body, name, initializer, types)._1)
-        } else {
-          constantFold(initializer).flatMap { foldedInitializer =>
-            Some(substitute(body, name, foldedInitializer, types)._1)
-          }
-        }
-      case _ => None */
 
 end Optimizer
 

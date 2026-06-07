@@ -1,39 +1,55 @@
 # Type abstractions
-- Person:
-- File:
-- Lign: 
+
+- Person: Karel
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Function :
+  - `Parser.typeAbstraction`
+  - `Parser.SimpleType` (updated to call `typeAbstraction`)
 
 # Prefix terms
-- Person:
-- File:
-- Lign: 
+
+- Person: Grace
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Functions:
+  - `Parser.prefixOperator`
+  - `Parser.prefixTerm`
 
 # Universal types
-- Person:
-- File:
-- Lign: 
+
+- Person: Grace
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Lign:
+  - `Parser.forAll`
+  - `Parser.SimpleType` (updated to call `forAll`)
 
 # Arrow types
-- Person:
-- File:
-- Lign: 
+
+- Person: David
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Function: `Parser.typ3` (updated)
 
 # Parenthesized types
+
 - Person: Maroua
-- File: scala/parser/Parser.scala
-- Lign: 380-387
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Function: `Parser.parenthesizedType`
 
 # Type applications
-- Person:
-- File:
-- Lign: 
+
+- Person: Maroua + Grace
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Function: `Parser.typeApplication` (updated)
 
 # Recursive abstractions
-- Person:
-- File:
-- Lign: 
+
+- Person: David
+- File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
+- Function:
+  - `Parser.recursiveTypeAbstraction`
+  - `Parser.simpleTerm` (updated to call `recursiveTypeAbstraction`)
 
 # Multiple parameters and arguments
+
 - Person: Aurélie
 - File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
 - Functions:
@@ -42,8 +58,8 @@
   - `Parser.trailingTypeParameters`
   - `Parser.typeAbstraction` (updated to call `trailingTypeParameters`)
 
-
 # Normalization
+
 - Person: Aurélie
 - File: [src/main/scala/optimizer/Optimizer.scala](src/main/scala/optimizer/Optimizer.scala)
 - Functions:
@@ -51,8 +67,9 @@
   - `Optimizer.constantFoldRecursively` (updated to call `normalize`)
 
 # Dead code elimination
+
 - Person: Aurélie
-- Files: 
+- Files:
   - [src/main/scala/optimizer/Optimizer.scala](src/main/scala/optimizer/Optimizer.scala)
   - [src/test/scala/Optimizer.scala](src/test/scala/Optimizer.scala)
 - Functions:
@@ -61,29 +78,34 @@
   - `Optimizer.constantFoldRecursively` (updated to call `deadCodeEliminate`)
 
 # Built-in arithmetic and comparison
+
 - Person: David
 - Files:
   - [src/main/scala/emitter/Emitter.scala](src/main/scala/emitter/Emitter.scala)
   - [src/main/scala/optimizer/Optimizer.scala](src/main/scala/optimizer/Optimizer.scala)
   - [src/main/scala/syntax/InfixOperator.scala](src/main/scala/syntax/InfixOperator.scala)
   - [src/test/scala/Emitter.scala](src/test/scala/Emitter.scala)
-- Lign: 
+- Functions:
+  - `Emitter.emitAsValue` (updated to match case `infixOperatiors`)
+  - `Optimizer.constantFold`
 
 # Constant propagation
+
 - Person: Maroua
 - File:
-    - [src/main/scala/optimizer/Optimizer.scala](src/main/scala/optimizer/Optimizer.scala)
-    - [src/test/scala/Optimizer.scala](src/test/scala/Optimizer.scala)
+  - [src/main/scala/optimizer/Optimizer.scala](src/main/scala/optimizer/Optimizer.scala)
+  - [src/test/scala/Optimizer.scala](src/test/scala/Optimizer.scala)
 - Functions:
-    - `Optimizer.constantPropagation`
-    - `Optimizer.constantFoldRecursively` (updated to call `constantPropagation`)
+  - `Optimizer.constantPropagation`
+  - `Optimizer.constantFoldRecursively` (updated to call `constantPropagation`)
 
 # Inlining
-- Person:
-- File:
-- Lign:
 
-# Bindings
-- Person:
+- Person: Karel + Grace
 - File:
-- Lign: 
+  - [src/main/scala/optimizer/Optimizer.scala](src/main/scala/optimizer/Optimizer.scala)
+  - [src/test/scala/Optimizer.scala](src/test/scala/Optimizer.scala)
+- Functions:
+  - `Optimizer.substitute`
+  - `Optimizer.constantPropagation` (updated to call all `TermTree` types)
+  - `Optimizer.constantFoldRecursively` (updated to used `betaReduced`)
