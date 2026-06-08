@@ -1,3 +1,5 @@
+The lab was made by Grace Naing, Maroua Zanad, Karel Svoboda, David Braz and Aurélie Pham . We divided the work as follows:
+
 # Type abstractions
 
 - Person: Karel
