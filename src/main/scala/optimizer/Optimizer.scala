@@ -54,7 +54,7 @@ object Optimizer:
             constantFoldRecursively(substitutedBody, types ++ ts ++ substitutedTypes)
           } else {
           val (body, us) = constantFoldRecursively(e.body, types)
-          val updated = Syntax(TermTree.Binding(e.name, e.initializer, body), tree.span)
+          val updated = Syntax(TermTree.Binding(e.name, initializer, body), tree.span)
           deadCodeEliminate(updated) match
             case Some(s) => (s, Map(s -> types(tree)))
             case _ => (updated, (ts ++ us).updated(updated, types(tree)))
@@ -156,7 +156,7 @@ object Optimizer:
 
       case _ => None
   
-  /** Replace variables with their constant values, if possible. */
+  /** Replace variables with their constant values, if possible. Guided by claude.*/
   private def constantPropagation(body: Syntax[TermTree], name: Syntax[TermTree.Variable], value: Syntax[TermTree], types: TypedProgram.TypeAssignments): (Syntax[TermTree], TypedProgram.TypeAssignments) = 
     body.value match
       case TermTree.Variable(n) if n == name.value.name => (value, Map(value -> types(body)))
@@ -167,9 +167,9 @@ object Optimizer:
         val updated = Syntax(TermTree.Binding(param, substitutedInitializer, substitutedBody), body.span)
         (updated, (ts ++ us).updated(updated, types(body)))
 
-      case TermTree.Binding(_, initializer, bodyExpr) =>
+      case TermTree.Binding(param, initializer, bodyExpr) =>
         val (substitutedInitializer, ts) = constantPropagation(initializer, name, value, types)
-        val updated = Syntax(TermTree.Binding(name, substitutedInitializer, bodyExpr), body.span)
+        val updated = Syntax(TermTree.Binding(param, substitutedInitializer, bodyExpr), body.span)
         (updated, ts.updated(updated, types(body)))
 
       case TermTree.TermApplication(abstraction, argument) =>
