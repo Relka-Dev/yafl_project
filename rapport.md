@@ -26,7 +26,7 @@ The lab was made by Grace Naing, Maroua Zanad, Karel Svoboda, David Braz and Aur
 
 # Arrow types
 
-- Person: David
+- Person: David + Aurélie
 - File: [src/main/scala/parser/Parser.scala](src/main/scala/parser/Parser.scala)
 - Function: `Parser.typ3` (updated)
 
@@ -90,6 +90,9 @@ The lab was made by Grace Naing, Maroua Zanad, Karel Svoboda, David Braz and Aur
 - Functions:
   - `Emitter.emitAsValue` (updated to match case `infixOperatiors`)
   - `Optimizer.constantFold`
+  - `InfixOperator enum`
+  - `InfixOperator.unapply`
+  - Tests: `Emitter` : `integer substraction`, `integer multiplication`, `integer division`, `integer equal comparison`, `integer not equal comparison`, `integer greater than comparison`, `integer less than comparison`
 
 # Constant propagation
 
