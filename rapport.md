@@ -1,3 +1,4 @@
+Tag: [V1.0](https://github.com/Relka-Dev/yafl_project/releases/tag/v1.0)
 The lab was made by Grace Naing, Maroua Zanad, Karel Svoboda, David Braz and Aurélie Pham . We divided the work as follows:
 
 # Type abstractions
